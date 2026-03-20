@@ -1,6 +1,6 @@
 import 'package:volcan_pay/features/auth/data/datasources/auth_datasource.dart';
 import 'package:volcan_pay/features/auth/data/models/user_model.dart';
-import 'package:volcan_pay/features/auth/domain/entities/user.dart';
+import 'package:volcan_pay/features/auth/domain/entities/user_entity.dart';
 import 'package:volcan_pay/features/auth/domain/repositories/auth_repository.dart';
 
 class AuthRepositoryImpl extends AuthRepository {
@@ -21,6 +21,12 @@ class AuthRepositoryImpl extends AuthRepository {
     String fullName,
   ) async {
     final userModel = await datasource.signUp(email, password, fullName);
+    return userModel.toEntity();
+  }
+
+  @override
+  Future<UserEntity> verifyEmailOTP(String email, String otp) async {
+    final userModel = await datasource.verifyEmailOTP(email, otp);
     return userModel.toEntity();
   }
 

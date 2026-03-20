@@ -18,11 +18,7 @@ class AuthDatasourceImpl implements AuthDatasource {
       throw Exception('Error al iniciar sesión');
     }
 
-    return UserModel.fromJson({
-      'id': response.user!.id,
-      'email': response.user!.email,
-      'full_name': response.user!.userMetadata?['full_name'],
-    });
+    return UserModel.fromSupabaseUser(response.user!);
   }
 
   @override
@@ -41,14 +37,30 @@ class AuthDatasourceImpl implements AuthDatasource {
       password: password,
       data: {'full_name': fullName},
     );
+
     if (response.user == null) {
       throw Exception('Error al registrarse');
     }
 
-    return UserModel.fromJson({
-      'id': response.user!.id,
-      'email': response.user!.email,
-      'full_name': fullName,
-    });
+    if (response.user != null &&
+        (response.user?.identities?.isEmpty ?? false)) {
+      await _client.auth.signOut();
+      throw 'Este correo electrónico ya está registrado. Por favor, utiliza otro correo electronico.';
+    }
+
+    return UserModel.fromSupabaseUser(response.user!);
+  }
+
+  @override
+  Future<UserModel> verifyEmailOTP(String email, String otp) async {
+    final response = await _client.auth.verifyOTP(
+      email: email,
+      token: otp,
+      type: OtpType.signup,
+    );
+    if (response.user == null) {
+      throw Exception('Error al verificar el OTP');
+    }
+    return UserModel.fromSupabaseUser(response.user!);
   }
 }

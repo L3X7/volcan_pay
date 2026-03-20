@@ -1,25 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:volcan_pay/features/auth/presentation/providers/auth_provider.dart';
 
-class LoginPage extends HookConsumerWidget {
-  const LoginPage({super.key});
+class RegisterPage extends HookConsumerWidget {
+  const RegisterPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // 1. Controladores automáticos (Se destruyen solos al cerrar la página)
     final emailController = useTextEditingController();
     final passwordController = useTextEditingController();
-    // 2. Memorizamos la llave del formulario para que no cambie entre redibujados
+    final confirmPasswordController = useTextEditingController();
+    final fullNameController = useTextEditingController();
+
     final formKey = useMemoized(() => GlobalKey<FormState>());
-    // 3. Observamos el estado del controlador de autenticación
+
     final authState = ref.watch(authControllerProvider);
 
-    // 4. Escucha de errores
     ref.listen(authControllerProvider, (previous, next) {
       next.whenOrNull(
+        data: (user) {},
         error: (error, stack) {
           ScaffoldMessenger.of(
             context,
@@ -28,14 +28,26 @@ class LoginPage extends HookConsumerWidget {
       );
     });
 
-    // 5. Lógica de Login memorizada con useCallback
-    final handleLogin = useCallback(() {
-      if (formKey.currentState!.validate()) {
-        ref
-            .read(authControllerProvider.notifier)
-            .login(emailController.text.trim(), passwordController.text.trim());
-      }
-    }, [formKey, emailController, passwordController]);
+    final handleRegister = useCallback(
+      () {
+        if (formKey.currentState!.validate()) {
+          ref
+              .read(authControllerProvider.notifier)
+              .register(
+                emailController.text.trim(),
+                passwordController.text.trim(),
+                fullNameController.text.trim(),
+              );
+        }
+      },
+      [
+        formKey,
+        emailController,
+        passwordController,
+        confirmPasswordController,
+        fullNameController,
+      ],
+    );
 
     return Scaffold(
       body: SafeArea(
@@ -54,12 +66,26 @@ class LoginPage extends HookConsumerWidget {
                   ),
                   const SizedBox(height: 20),
                   const Text(
-                    'Bienvenido a VolcanPay',
+                    'Registro',
                     style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 40),
 
-                  // Campo de Email
+                  TextFormField(
+                    controller: fullNameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Nombre Completo',
+                      prefixIcon: Icon(Icons.person_outline),
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.text,
+                    textCapitalization: TextCapitalization.words,
+                    validator: (value) => (value == null || value.isEmpty)
+                        ? 'Ingrese el nombre completo'
+                        : null,
+                  ),
+                  const SizedBox(height: 20),
+
                   TextFormField(
                     controller: emailController,
                     decoration: const InputDecoration(
@@ -70,12 +96,11 @@ class LoginPage extends HookConsumerWidget {
                     keyboardType: TextInputType.emailAddress,
                     validator: (value) =>
                         (value == null || !value.contains('@'))
-                        ? 'Ingresa un correo válido'
+                        ? 'Ingrese un correo válido'
                         : null,
                   ),
                   const SizedBox(height: 20),
 
-                  // Campo de Contraseña
                   TextFormField(
                     controller: passwordController,
                     decoration: const InputDecoration(
@@ -88,15 +113,31 @@ class LoginPage extends HookConsumerWidget {
                         ? 'Mínimo 6 caracteres'
                         : null,
                   ),
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 20),
 
-                  // Botón de Acción
+                  TextFormField(
+                    controller: confirmPasswordController,
+                    decoration: const InputDecoration(
+                      labelText: 'Repetir Contraseña',
+                      prefixIcon: Icon(Icons.lock_outline),
+                      border: OutlineInputBorder(),
+                    ),
+                    obscureText: true,
+                    validator: (value) {
+                      if (value == null || value.length < 6) {
+                        return 'Mínimo 6 caracteres';
+                      } else if (value != passwordController.text) {
+                        return 'Las contraseñas no coinciden';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 20),
                   SizedBox(
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton(
-                      // Si el estado es "loading", desactivamos el botón
-                      onPressed: authState.isLoading ? null : handleLogin,
+                      onPressed: authState.isLoading ? null : handleRegister,
                       style: ElevatedButton.styleFrom(
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
@@ -106,28 +147,13 @@ class LoginPage extends HookConsumerWidget {
                           ? const SizedBox(
                               height: 20,
                               width: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                              child: CircularProgressIndicator(),
                             )
                           : const Text(
-                              'Iniciar Sesión',
+                              'Registrarse',
                               style: TextStyle(fontSize: 16),
                             ),
                     ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Botón de Registro y texto
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text('¿No tienes una cuenta?'),
-                      TextButton(
-                        onPressed: () {
-                          context.go('/register');
-                        },
-                        child: const Text('Regístrate'),
-                      ),
-                    ],
                   ),
                 ],
               ),

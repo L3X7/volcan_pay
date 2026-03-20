@@ -6,4 +6,6 @@ abstract class AuthDatasource {
   Future<UserModel> signUp(String email, String password, String fullName);
 
   Future<void> signOut();
+
+  Future<UserModel> verifyEmailOTP(String email, String otp);
 }
